@@ -1,14 +1,12 @@
 ﻿#include <iostream>
 #include "Node.h"
 
-
 template <typename T>
 Node<T>::Node(const T& value):
         value(value),
         isRoot(true),
         op(opType::e_nop),
         variable(true){}
-
 
 template <typename T>
 Node<T>::Node(const T& value, bool variable):
@@ -17,10 +15,8 @@ Node<T>::Node(const T& value, bool variable):
         op(opType::e_nop),
         variable(variable){}
 
-
 template <typename T>
 Node<T>::Node(){};
-
 
 template <>
 //MatrixXf& Node<MatrixXf>::eval(){
@@ -65,7 +61,6 @@ void Node<MatrixXf>::eval(){
                         return;
                 }
                 case opType::e_plus:{
-
 
                         MatrixXf v0 = parents[0]->value;
                         MatrixXf v1 = parents[1]->value;
@@ -134,7 +129,7 @@ void Node<MatrixXf>::eval(){
                 }
                 case opType::e_relu:{
                         value = parents[0]->value.cwiseMax(0);
-                }        
+                }       
                 case opType::e_nop: {
                         return;
                 }
@@ -144,8 +139,6 @@ void Node<MatrixXf>::eval(){
                 }
         }
 }
-
-
 
 
 template <>
@@ -183,13 +176,13 @@ void Node<Tensor<float, 4>>::eval(){
                         value = out;
                         parents[0]->childType[0] = 1;
                         parents[1]->childType[0] = 1;
-                        return;        
+                        return; 
                 }
                 case opType::e_maxpool: {
                         parentType[0] = 1;
                         int poolSize = 2;
                         int poolStride = 1;
-                        Tensor<float, 4> v = parents[0]->value;        
+                        Tensor<float, 4> v = parents[0]->value; 
                         const Tensor<float, 4>::Dimensions& inputDim = parents[0]->value.dimensions();
                         int numStrides0 = inputDim[0]/poolSize+1;
                         int numStrides1 = inputDim[1]/poolSize+1;
@@ -221,7 +214,7 @@ void Node<Tensor<float, 4>>::eval(){
                         value = out;
                         argMaxCache = arg;
                         parents[0]->childType[0] = 1;
-                        return;        
+                        return; 
                 }
                 case opType::e_nop: {
                         return;
@@ -241,18 +234,15 @@ void Node<Tensor<float, 4>>::eval(){
         }
 }
 
-
 template <typename T>
 void Node<T>::eval(){
         return ;
 }
 
-
 template <>
 bool Node<NodeBase>::areChildrenDone(){
         return false;
 }
-
 
 template <typename T>
 bool Node<T>:: areChildrenDone(){
@@ -269,7 +259,7 @@ bool Node<T>:: areChildrenDone(){
                                 if(gradient.size() == 0){ 
                                         //std::cout << "Setting gradient" << std::endl;
                                         gradient = n->gradientParent[this];}
-                                else{        //std::cout << "Adding here" << std::endl;
+                                else{   //std::cout << "Adding here" << std::endl;
                                         gradient += n->gradientParent[this];
                                         //std::cout << "Added gradient is " << gradient << std::endl;
                                 }
@@ -295,7 +285,6 @@ bool Node<T>:: areChildrenDone(){
         return true;
 }
 
-
 template <>
 bool Node<MatrixXf>:: areChildrenDone(){
         //std::cout << "Entering MatrixXf areChildrenDone " << std::endl;
@@ -307,9 +296,8 @@ bool Node<MatrixXf>:: areChildrenDone(){
                 else{
                         //std::cout << "Gradient size "  << gradient.size() << std::endl;
                         if(gradient.size() == 0){ gradient = n->gradientParent[this];}
-                        else{        gradient += n->gradientParent[this]; }
+                        else{   gradient += n->gradientParent[this]; }
                 }
-
 
         }
         return true;
@@ -319,10 +307,8 @@ void Node<T>::back(){
         return;
 }
 
-
 template <>
 void Node<Tensor<float, 4>>::col2im(Tensor<float, 4>& input, Tensor<float, 4>& kernel, Tensor<float, 2>& flattenGradient, Tensor<float, 2>& kernelRow){ 
-
 
         const Tensor<float, 2>::Dimensions& flattenDim = flattenGradient.dimensions();
         const Tensor<float, 4>::Dimensions& kernelDim = kernel.dimensions();
@@ -333,13 +319,12 @@ void Node<Tensor<float, 4>>::col2im(Tensor<float, 4>& input, Tensor<float, 4>& k
         std::cout << "inputDim " << inputDim[0] << " " << inputDim[1] << " " << inputDim[2] << " " << inputDim[3] <<std::endl;
 */
         int stride = 1;
-        int hPrime = (inputDim[0] - kernelDim[0])/stride + 1;        
-        int wPrime = (inputDim[1] - kernelDim[1])/stride + 1;        
+        int hPrime = (inputDim[0] - kernelDim[0])/stride + 1;   
+        int wPrime = (inputDim[1] - kernelDim[1])/stride + 1;   
 /*
         std::cout << "hPrime " << hPrime << std::endl;
         std::cout << "wPrime " << wPrime << std::endl;
 */
-
 
         for(int i = 0; i < flattenDim[0]; ++i){
                 Tensor<float, 1> row = flattenGradient.chip(i, 0);
@@ -352,24 +337,59 @@ void Node<Tensor<float, 4>>::col2im(Tensor<float, 4>& input, Tensor<float, 4>& k
                 int wStart = (i % wPrime) * stride;
                 Eigen::array<long, 4> startExtent = {hStart, wStart, 0, 0};
                 Eigen::array<long, 4> endExtent = {kernelDim[0], kernelDim[1], inputDim[2], 1};
-                input.slice(startExtent, endExtent) += rowReshape;        
+                input.slice(startExtent, endExtent) += rowReshape;      
                 //std::cout << "col2im conversion " << std::endl;
                 //std::cout << input << std::endl;
         }
         //exit(0);
 
-
         Eigen::array<long, 4> kernelReshapeDim({kernelDim[0], kernelDim[1], kernelDim[2], 1});
         kernel = kernelRow.reshape(kernelReshapeDim);
-
 
         return;
 }
 
 
 template <>
-void Node<Tensor<float, 4>>::im2col(Tensor<float, 4>& input, Tensor<float, 4>& kernel, Tensor<float, 2>& outputMat, Tensor<float, 2>& kernelRow){ 
+void Node<Tensor<float, 4>>::col2imImage(Tensor<float, 4>& input, Tensor<float, 2>& flattenGradient, int kernelSize){ 
 
+        const Tensor<float, 2>::Dimensions& flattenDim = flattenGradient.dimensions();
+        const Tensor<float, 4>::Dimensions& inputDim = input.dimensions();
+/*
+        std::cout << "flattenDim " << flattenDim[0] << " " << flattenDim[1] << " " << flattenDim[2] << std::endl;
+        std::cout << "kernelDim " << kernelDim[0] << " " << kernelDim[1] << " " << kernelDim[2] << " " << kernelDim[3] << std::endl;
+        std::cout << "inputDim " << inputDim[0] << " " << inputDim[1] << " " << inputDim[2] << " " << inputDim[3] <<std::endl;
+*/
+        int stride = 1;
+        int hPrime = (inputDim[0] - kernelSize)/stride + 1;     
+        int wPrime = (inputDim[1] - kernelSize)/stride + 1;     
+/*
+        std::cout << "hPrime " << hPrime << std::endl;
+        std::cout << "wPrime " << wPrime << std::endl;
+*/
+
+        for(int i = 0; i < flattenDim[0]; ++i){
+                Tensor<float, 1> row = flattenGradient.chip(i, 0);
+                //std::cout << "Row " << std::endl;
+                //std::cout << row << std::endl;
+                Eigen::array<long, 4> reshapeDim({kernelSize, kernelSize, inputDim[2], 1});
+                Tensor<float, 4> rowReshape = row.reshape(reshapeDim);
+                //std::cout << rowReshape << std::endl;
+                int hStart = (i / wPrime) * stride;
+                int wStart = (i % wPrime) * stride;
+                Eigen::array<long, 4> startExtent = {hStart, wStart, 0, 0};
+                Eigen::array<long, 4> endExtent = {kernelSize, kernelSize, inputDim[2], 1};
+                input.slice(startExtent, endExtent) += rowReshape;      
+                //std::cout << "col2im conversion " << std::endl;
+                //std::cout << input << std::endl;
+        }
+        //exit(0);
+
+        return;
+}
+
+template <>
+void Node<Tensor<float, 4>>::im2col(Tensor<float, 4>& input, Tensor<float, 4>& kernel, Tensor<float, 2>& outputMat, Tensor<float, 2>& kernelRow){ 
 
         const Tensor<float, 4>::Dimensions& inputDim = input.dimensions();
         const Tensor<float, 4>::Dimensions& kernelDim = kernel.dimensions();
@@ -399,7 +419,6 @@ void Node<Tensor<float, 4>>::im2col(Tensor<float, 4>& input, Tensor<float, 4>& k
                 }
         }
 
-
         for(int depth = 0; depth < inputDim[2]; ++depth){
                 for(int i = 0; i < kernelSize; ++i){
                         for(int j = 0; j < kernelSize; ++j){
@@ -409,10 +428,40 @@ void Node<Tensor<float, 4>>::im2col(Tensor<float, 4>& input, Tensor<float, 4>& k
         }
 }
 
+template <>
+void Node<Tensor<float, 4>>::im2colImage(Tensor<float, 4>& input, Tensor<float, 2>& outputMat, int kernelSize){ 
+
+        const Tensor<float, 4>::Dimensions& inputDim = input.dimensions();
+        //std::cout << inputDim[0] << " " << inputDim[1] << " " << inputDim[2] << " " << inputDim[3] << std::endl;
+        int stride = 1;
+        const Tensor<float, 2>::Dimensions& outputMatDim = outputMat.dimensions();
+        int newHeight = (inputDim[0]-kernelSize)/stride + 1;
+        for(int depth = 0; depth < inputDim[2]; depth++){
+                for(int x_start = 0; x_start < (inputDim[0]-kernelSize)/stride + 1 ; ++x_start){
+                        for(int y_start = 0; y_start < (inputDim[1]-kernelSize)/stride + 1; ++y_start){
+                                array<long, 3> inputStart = {x_start*stride, y_start*stride, depth};
+                                array<long, 3> inputEnd = {kernelSize, kernelSize, 1};
+                                array<long, 2> outStart = {depth*kernelSize*kernelSize, x_start*((inputDim[0]-kernelSize)/stride + 1) + y_start};
+                                array<long, 2> outEnd = {kernelSize*kernelSize, 1};
+                                array<long, 2> reshapeDim = {kernelSize*kernelSize, 1};
+                                Tensor<float, 3> inputSliced = input.slice(inputStart, inputEnd);
+                                Tensor<float, 2> flattened(kernelSize*kernelSize, 1);
+                                for(int i = 0; i < kernelSize ; ++i){
+                                        for(int j = 0; j < kernelSize; ++j){
+                                                flattened(i*kernelSize + j, 0) = inputSliced(i, j, 0);
+                                        }
+                                }
+                                outputMat.slice(outStart, outEnd) = flattened;
+                        }
+                }
+        }
+
+}
 
 template <>
 void Node<Tensor<float, 4>>::back(){
         switch(op){
+/*
                 case opType::e_conv:{
                         //std::cout << "In conv backprop" << std::endl;
                         //std::cout << gradient << std::endl;
@@ -427,12 +476,10 @@ void Node<Tensor<float, 4>>::back(){
                         int depth = inputDim[2];
                         int numExamples = inputDim[3];
 
-
                         Tensor<float, 4> inputParentGradient(inputDim);
                         inputParentGradient.setZero();
                         Tensor<float, 4> filterParentGradient(kernelDim);
                         filterParentGradient.setZero();
-
 
                         for(int n = 0; n < numExamples; ++n){ 
                                 
@@ -442,7 +489,6 @@ void Node<Tensor<float, 4>>::back(){
                                         
                                         //std::cout << "In filter " << f << std::endl;
 
-
                                         // Input slicing bounds
                                         array<long, 4> inputStart = {0, 0, 0, n};
                                         array<long, 4> inputExtent = {height, width, depth, 1};
@@ -451,21 +497,17 @@ void Node<Tensor<float, 4>>::back(){
                                         array<long, 4> kernelStart = {0, 0, 0, f};
                                         array<long, 4> kernelExtent = {kernelSize, kernelSize, depth, 1};
 
-
                                         // Gradient slicing bounds
                                         array<long, 4> gradientStart = {0, 0, f, n};
                                         array<long, 4> gradientExtent = {((height-kernelSize)/1 + 1), ((width-kernelSize)/1 + 1), 1, 1};
-
 
                                         // Sliced Kernel, Input and Gradient
                                         Tensor<float, 4> currKernel = parents[1]->value.slice(kernelStart, kernelExtent);
                                         Tensor<float, 4> currInput  = parents[0]->value.slice(inputStart, inputExtent);
                                         Tensor<float, 4> slicedGradient =  gradient.slice(gradientStart, gradientExtent);
 
-
                                         //std::cout << "Input image " << std::endl;
                                         //std::cout << currInput << std::endl;
-
 
                                         // im2col on input and kernel. Flatten Gradient
                                         Tensor<float, 2> inputMat(kernelSize*kernelSize*depth, ((height-kernelSize)/1 + 1) * ((width-kernelSize)/1 + 1)), inputFilter(kernelSize*kernelSize*depth, 1);
@@ -476,14 +518,14 @@ void Node<Tensor<float, 4>>::back(){
                                                         flattenGradient(row*((height-kernelSize)/1 + 1) + col, 0) = slicedGradient(row, col, 0, 0);
                                                 }
                                         }
-/*
+
+
                                         std::cout << "Flattened input Gradient " << std::endl;
                                         std::cout << flattenGradient << std::endl;
                                         std::cout << "im2col image " << std::endl;
                                         std::cout << inputMat << std::endl;
                                         std::cout << "im2col filter " << std::endl;
                                         std::cout << inputFilter << std::endl;
-*/
 
 
                                         // Compute gradient for input and kernel using backprop for multiply
@@ -491,14 +533,13 @@ void Node<Tensor<float, 4>>::back(){
                                         Tensor<float, 2> inputFilterTranspose = inputFilter.shuffle(shuffle);
                                         Eigen::array<Eigen::IndexPair<int>, 1> product_dims = { Eigen::IndexPair<int>(1, 0) };
                                         Eigen::array<Eigen::IndexPair<int>, 1> transpose_product_dims = { Eigen::IndexPair<int>(0, 1) };
-                                        Tensor<float, 2> filterGradient = inputMat.contract(flattenGradient, product_dims);        
+                                        Tensor<float, 2> filterGradient = inputMat.contract(flattenGradient, product_dims);     
                                         Tensor<float, 2> inputGradient = flattenGradient.contract(inputFilterTranspose, product_dims);
-/*
+
                                         std::cout << "Flattened filter parent gradient " << std::endl;
                                         std::cout << filterGradient << std::endl;
                                         std::cout << "Flattened input parent gradient " << std::endl;
                                         std::cout << inputGradient << std::endl;
-*/
 
 
                                         // run col2im on gradients and set gradients for each parent
@@ -510,16 +551,14 @@ void Node<Tensor<float, 4>>::back(){
                                         inputParentGradient.slice(inputStart, inputExtent) += inputGradientIter;
                                         filterParentGradient.slice(kernelStart, kernelExtent) += filterGradientIter;
 
-
                                         //std::cout << inputFilterTranspose.contract(inputMat, product_dims)  << std::endl;
-/*
+
                                         std::cout << "Input Gradient " << std::endl;
                                         std::cout << inputParentGradient << std::endl;
 
-
                                         std::cout << "Filter Gradient " << std::endl;
                                         std::cout << filterParentGradient << std::endl;
-*/
+
                                 }
                         }
                         gradientParent[parents[0]] = inputParentGradient;
@@ -527,8 +566,131 @@ void Node<Tensor<float, 4>>::back(){
                         //exit(0);
                         return;
                 }
+*/
+                case opType::e_conv:{
+                        //std::cout << "In conv backprop" << std::endl;
+                        //std::cout << gradient << std::endl;
+                        const Tensor<float, 4>::Dimensions& gradientDim = gradient.dimensions();
+                        array<int, 3> dims = {0, 1, 2};
+                        const Tensor<float, 4>::Dimensions& kernelDim = parents[1]->value.dimensions();
+                        int kernelSize = kernelDim[0];
+                        int numFilters = kernelDim[3];
+                        const Tensor<float, 4>::Dimensions& inputDim = parents[0]->value.dimensions();
+                        int height = inputDim[0];
+                        int width = inputDim[1];
+                        int depth = inputDim[2];
+                        int numExamples = inputDim[3];
+
+                        Tensor<float, 4> inputParentGradient(inputDim);
+                        inputParentGradient.setZero();
+                        Tensor<float, 4> filterParentGradient(kernelDim);
+                        filterParentGradient.setZero();
+
+                        for(int n = 0; n < numExamples; ++n){ 
+                                
+                                //std::cout << "In example " << n << std::endl;
+
+                                // Input slicing bounds
+                                array<long, 4> inputStart = {0, 0, 0, n};
+                                array<long, 4> inputExtent = {height, width, depth, 1};
+
+                                Tensor<float, 4> currInput  = parents[0]->value.slice(inputStart, inputExtent);
+                                Tensor<float, 2> inputMat(kernelSize*kernelSize*depth, ((height-kernelSize)/1 + 1) * ((width-kernelSize)/1 + 1));
+                                im2colImage(currInput, inputMat, kernelSize);
+                
+                                // Accumulate image gradient over all iterations
+                                Tensor<float, 2> inputGradientAccumulate(((height-kernelSize)/1 + 1)*((width-kernelSize)/1 + 1), kernelSize*kernelSize*depth);
+        
+                                for(int f = 0; f < numFilters; ++f){
+                                        
+                                        //std::cout << "In filter " << f << std::endl;
+                                        
+                                        // Kernel slicing bounds        
+                                        array<long, 4> kernelStart = {0, 0, 0, f};
+                                        array<long, 4> kernelExtent = {kernelSize, kernelSize, depth, 1};
+
+                                        // Gradient slicing bounds
+                                        array<long, 4> gradientStart = {0, 0, f, n};
+                                        array<long, 4> gradientExtent = {((height-kernelSize)/1 + 1), ((width-kernelSize)/1 + 1), 1, 1};
+
+                                        // Sliced Kernel, Input and Gradient
+                                        Tensor<float, 4> currKernel = parents[1]->value.slice(kernelStart, kernelExtent);
+                                        Tensor<float, 4> slicedGradient =  gradient.slice(gradientStart, gradientExtent);
+
+                                        //std::cout << "Input image " << std::endl;
+                                        //std::cout << currInput << std::endl;
+
+                                        // im2col on input and kernel. Flatten Gradient
+                                        Tensor<float, 2> inputFilter(kernelSize*kernelSize*depth, 1);
+                                        //im2col(currInput, currKernel, inputMat, inputFilter);
+                                        for(int depth = 0; depth < inputDim[2]; ++depth){
+                                                for(int i = 0; i < kernelSize; ++i){
+                                                        for(int j = 0; j < kernelSize; ++j){
+                                                                inputFilter(i*kernelSize + j + depth*kernelSize*kernelSize, 0) = currKernel(i, j, depth, 0);
+                                                        }
+                                                }
+                                        }
+                                        Tensor<float, 2> flattenGradient(((height-kernelSize)/1 + 1)*((width-kernelSize)/1 + 1), 1);
+                                        for(int col = 0; col < ((width-kernelSize)/1 + 1); ++col){
+                                                for(int row = 0; row < ((height-kernelSize)/1 + 1); ++row){
+                                                        flattenGradient(row*((height-kernelSize)/1 + 1) + col, 0) = slicedGradient(row, col, 0, 0);
+                                                }
+                                        }
+
+/*
+                                        std::cout << "Flattened input Gradient " << std::endl;
+                                        std::cout << flattenGradient << std::endl;
+                                        std::cout << "im2col image " << std::endl;
+                                        std::cout << inputMat << std::endl;
+                                        std::cout << "im2col filter " << std::endl;
+                                        std::cout << inputFilter << std::endl;
+*/
+
+                                        // Compute gradient for input and kernel using backprop for multiply
+                                        array<long, 2> shuffle = {1, 0};
+                                        Tensor<float, 2> inputFilterTranspose = inputFilter.shuffle(shuffle);
+                                        Eigen::array<Eigen::IndexPair<int>, 1> product_dims = { Eigen::IndexPair<int>(1, 0) };
+                                        Eigen::array<Eigen::IndexPair<int>, 1> transpose_product_dims = { Eigen::IndexPair<int>(0, 1) };
+                                        Tensor<float, 2> filterGradient = inputMat.contract(flattenGradient, product_dims);     
+                                        Tensor<float, 2> inputGradient = flattenGradient.contract(inputFilterTranspose, product_dims);
+
+/*
+                                        std::cout << "Flattened filter parent gradient " << std::endl;
+                                        std::cout << filterGradient << std::endl;
+                                        std::cout << "Flattened input parent gradient " << std::endl;
+                                        std::cout << inputGradient << std::endl;
+*/
+
+                                        // run col2im on gradients and set gradients for each parent
+                                        Tensor<float, 4> filterGradientIter(kernelDim[0], kernelDim[1], kernelDim[2], 1);
+                                        inputGradientAccumulate += inputGradient;
+                                        Eigen::array<long, 4> kernelReshapeDim({kernelDim[0], kernelDim[1], kernelDim[2], 1});
+                                        filterGradientIter = filterGradient.reshape(kernelReshapeDim);
+                                        filterParentGradient.slice(kernelStart, kernelExtent) += filterGradientIter;
+                                        
+
+                                        //std::cout << inputFilterTranspose.contract(inputMat, product_dims)  << std::endl;
+/*
+                                        std::cout << "Input Gradient " << std::endl;
+                                        std::cout << inputParentGradient << std::endl;
+
+                                        std::cout << "Filter Gradient " << std::endl;
+                                        std::cout << filterParentGradient << std::endl;
+*/
+                                }
+
+                                Tensor<float, 4> inputGradientIter(inputDim[0], inputDim[1], inputDim[2], 1);
+                                col2imImage(inputGradientIter, inputGradientAccumulate, kernelSize);
+                                inputParentGradient.slice(inputStart, inputExtent) += inputGradientIter;
+
+                        }
+                        gradientParent[parents[0]] = inputParentGradient;
+                        gradientParent[parents[1]] = filterParentGradient;
+                        //exit(0);
+                        return;
+                }
                 case opType::e_maxpool:{
-//                        std::cout << "In maxpool backprop" << std::endl;
+//                      std::cout << "In maxpool backprop" << std::endl;
                         std::shared_ptr<Node<MatrixXf>>* cMat = reinterpret_cast<std::shared_ptr<Node<MatrixXf>>*>(&children[0]);
                         gradient = cMat->get()->flattenGradient;
 /*
@@ -539,16 +701,15 @@ void Node<Tensor<float, 4>>::back(){
                         std::cout << "Evaluated value " << std::endl;
                         std::cout << value << std::endl;
                         std::cout << "Parent0 " << std::endl;
-                        std::cout << parents[0]->value << std::endl;        
+                        std::cout << parents[0]->value << std::endl;    
                         std::cout << "Chosen indices " << std::endl;
                         std::cout <<  argMaxCache << std::endl;
-*/                        
+*/                      
                         int poolSize = 2;
                         int poolStride = 1;
                         const Tensor<float, 4>::Dimensions& inputDim = parents[0]->value.dimensions();
-                        Tensor<float, 4> finalGradient(inputDim);        
+                        Tensor<float, 4> finalGradient(inputDim);       
                         finalGradient = finalGradient.setZero();
-
 
                         //int numStrides0 = inputDim[0]/poolSize+1;
                         //int numStrides1 = inputDim[1]/poolSize+1;
@@ -582,10 +743,10 @@ void Node<Tensor<float, 4>>::back(){
                         //exit(0);
                         return;
                 }
-                case opType::e_relu:{        
+                case opType::e_relu:{   
                         Eigen::Tensor<float, 4> zeroConst(parents[0]->value.dimensions());
                         zeroConst.setConstant(0);
-                        Tensor<bool, 4> parent0Cmp = parents[0]->value >= zeroConst;        
+                        Tensor<bool, 4> parent0Cmp = parents[0]->value >= zeroConst;    
                         Tensor<float, 4> parent0CmpFloat = parent0Cmp.cast <float>();
                         Tensor<float, 4> finalGradientFloat = parent0CmpFloat*gradient;
                         //Eigen::Tensor<float, 4> finalGradientFloat = finalGradient.cast <float>();
@@ -608,7 +769,6 @@ void Node<Tensor<float, 4>>::back(){
                 }
         }
 }
-
 
 template <>
 void Node<MatrixXf>::back(){
@@ -640,15 +800,13 @@ void Node<MatrixXf>::back(){
                         gradientParent[parents[0]] = finalGradient;
                         return;
                 }
-                case opType::e_emul:{        
-
+                case opType::e_emul:{   
 
                         gradientParent[parents[1]] = parents[0]->value.cwiseProduct(gradient);
                         gradientParent[parents[0]] = parents[1]->value.cwiseProduct(gradient);
                         return;
                 }
                 case opType::e_plus:{
-
 
                         int parent0Rows = parents[0]->value.rows();
                         int parent0Cols = parents[0]->value.cols();
@@ -657,26 +815,24 @@ void Node<MatrixXf>::back(){
                         int gradientRows = gradient.rows();
                         int gradientCols = gradient.cols();
                 
-                        //std::cout << "parent0 " << parent0Rows << " " << parent0Cols << std::endl;        
-                        //std::cout << "parent1 " << parent1Rows << " " << parent1Cols << std::endl;        
-                        //std::cout << "gradient " << gradientRows << " " << gradientCols << std::endl;        
+                        //std::cout << "parent0 " << parent0Rows << " " << parent0Cols << std::endl;    
+                        //std::cout << "parent1 " << parent1Rows << " " << parent1Cols << std::endl;    
+                        //std::cout << "gradient " << gradientRows << " " << gradientCols << std::endl; 
                         if(parent0Rows == gradientRows && parent0Cols == gradientCols) {gradientParent[parents[0]] = gradient;}
                         else if(parent0Rows == gradientRows && parent0Cols == 1){gradientParent[parents[0]] = gradient.rowwise().sum();}
                         else if(parent0Cols == gradientCols && parent0Rows == 1){gradientParent[parents[0]] = gradient.colwise().sum();}
                         else { std::cout << "Invalid dimensions" << std::endl;}
-
 
                         if(parent1Rows == gradientRows && parent1Cols == gradientCols) {gradientParent[parents[1]] = gradient;}
                         else if(parent1Rows == gradientRows && parent1Cols == 1){gradientParent[parents[1]] = gradient.rowwise().sum();}
                         else if(parent1Cols == gradientCols && parent1Rows == 1){gradientParent[parents[1]] = gradient.colwise().sum();}
                         else { std::cout << "Invalid dimensions" << std::endl;}
 
-
                         //std::cout << "gradientParent0 for " << parents[0] << " is " << gradientParent[parents[0]] << std::endl;
                         //std::cout << "gradientParent1 for " << parents[1] << " is "  << gradientParent[parents[1]] << std::endl;
-                        return;        
+                        return; 
                 }
-                case opType::e_minus:{        
+                case opType::e_minus:{  
                         int parent0Rows = parents[0]->value.rows();
                         int parent0Cols = parents[0]->value.cols();
                         int gradientRows = gradient.rows();
@@ -693,22 +849,22 @@ void Node<MatrixXf>::back(){
                                 gradientParent[parents[1]] = -gradient;
                         return;
                 }
-                case opType::e_log:{        
+                case opType::e_log:{    
                         gradientParent[parents[0]] = gradient.cwiseProduct(parents[0]->value.cwiseInverse());
                         return;
                 }
-                case opType::e_colsum:{        
+                case opType::e_colsum:{ 
                         gradientParent[parents[0]] = MatrixXf::Ones(parents[0]->value.rows(), parents[0]->value.cols());
                         VectorXf V(Map<VectorXf>(gradient.data(), gradient.rows()*gradient.cols()));
                         gradientParent[parents[0]] =  gradientParent[parents[0]].array().colwise() * V.array() ;
                         return;
                 }
-                case opType::e_exp:{        
+                case opType::e_exp:{    
                         gradientParent[parents[0]] = parents[0]->value.array().exp() * gradient.array();
                         
                         return;
                 }
-                case opType::e_mul:{        
+                case opType::e_mul:{    
 /*
                         std::cout << "e_mul input gradient " << gradient << std::endl;
                         std::cout << "e_mul W input " << parents[1]->value << std::endl;
@@ -729,7 +885,7 @@ void Node<MatrixXf>::back(){
                         gradientParent[parents[0]] = parent0Float.matrix().cwiseProduct(gradient);
                         return;
                 }
-                case opType::e_max:{        
+                case opType::e_max:{    
                         if(parents[0]->value.size() > 1){
                                 auto parent0Cmp = parents[0]->value.array() == value.array();
                                 auto parent0Float = parent0Cmp.template cast<float>();
@@ -752,44 +908,37 @@ void Node<MatrixXf>::back(){
                         return;
                 }
                 default: { }
-        }        
+        }       
 }
-
 
 template <>
 void Node<MatrixXf>::update(){
         if(op != opType::e_nop || !variable) {return;}
-        value = value - 0.01*gradient;
+        value = value - 0.000001*gradient;
         gradient = MatrixXf::Zero(0,0);
 }
-
 
 template <>
 void Node<Tensor<float, 4>>::update(){
         if(op != opType::e_nop || !variable) {return;}
-        value = value - 0.01*gradient;
+        value = value - 0.000001*gradient;
         gradient.setZero();
 }
-
 
 template <typename T>
 void Node<T>::update(){
 }
-
 
 Node<MatrixXf>& flatten(Node<Tensor<float, 4>>& first){
         std::vector<Node<Tensor<float, 4>>*> nodesVector = {&first};
         return storeFlatten(opType::e_flatten, nodesVector);
 }
 
-
 Node<MatrixXf>& storeFlatten(opType op, std::vector<Node<Tensor<float, 4>>*>& nodesVector){
-
 
         std::shared_ptr<Node<MatrixXf>> newNode = std::shared_ptr<Node<MatrixXf>>(new Node<MatrixXf>());        
         newNode->op = op;
         newNode->variable = false;
-
 
         // Store both parents to node as shared pointers
         for(Node<Tensor<float, 4>>* n: nodesVector){
@@ -800,7 +949,7 @@ Node<MatrixXf>& storeFlatten(opType op, std::vector<Node<Tensor<float, 4>>*>& no
                 n->children.push_back(*castNode);
                 n->childType.push_back(0);
         }
-        //std::cout << "Here" << std::endl;        
+        //std::cout << "Here" << std::endl;     
         //std::cout << "Newnode parents: " << newNode->parents.size() << std::endl;
         return *newNode;
 }
@@ -809,3 +958,6 @@ template class Node<MatrixXf>;
 template class Node<Tensor<float, 2>>;
 template class Node<Tensor<float, 3>>;
 template class Node<Tensor<float, 4>>;
+
+
+
